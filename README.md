@@ -3,6 +3,8 @@
 A smart parking + last-mile travel system that makes city commuting smoother.  
 Book your parking in advance, scan a QR to enter/exit, and quickly get a ride to your final destination.
 
+Documents: https://drive.google.com/drive/folders/11E-megYMjrXW8EcYnYZedcMpRDNuKC6m?usp=drive_link
+
 ---
 
 ## Tech Stack (MERN)
