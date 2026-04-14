@@ -1,44 +1,62 @@
-#  Park & Ride
+# Park and Ride
 
-A smart parking + last-mile travel system that makes city commuting smoother.  
-Book your parking in advance, scan a QR to enter/exit, and quickly get a ride to your final destination.
+A smart parking and last-mile travel system that makes city commuting smoother.
+
+Book parking in advance, scan a QR to enter and exit, and quickly get a ride to your final destination.
 
 Documents: https://drive.google.com/drive/folders/11E-megYMjrXW8EcYnYZedcMpRDNuKC6m?usp=drive_link
 
----
+## Stack
+- MongoDB
+- Express
+- React
+- Node.js
 
-## Tech Stack (MERN)
-- Frontend: React.js  
-- Backend: Node.js, Express.js  
-- Database: MongoDB  
-- Auth: JWT  
-- Extras: QR Code system for entry/exit  
+## Features
+- Browse parking locations
+- Filter by availability, price, and transit access
+- Add new parking locations through the API
+- Reserve a spot through the API
+- QR-based entry and exit flow
+- Last-mile ride booking support
+- Smart pricing based on demand
 
----
+## Project Structure
+- `client`: React app built with Vite
+- `server`: Express API connected to MongoDB with Mongoose
 
-## What it does
--  Reserve parking slots in advance  
--  QR-based entry & exit (no hardware needed)  
--  Book last-mile rides (cab/shuttle/e-rickshaw)  
--  Smart pricing based on demand  
--  Works even in low network areas  
+## Setup
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Create a `server/.env` file:
+   ```env
+   MONGO_URI=mongodb://127.0.0.1:27017/park_and_ride
+   PORT=5000
+   ```
+3. Start both apps in development:
+   ```bash
+   npm run dev
+   ```
+4. Build the frontend for production:
+   ```bash
+   npm run build
+   ```
+5. Start the API server:
+   ```bash
+   npm start
+   ```
 
----
+## API
+- `GET /api/locations`
+- `POST /api/locations`
+- `POST /api/locations/:id/reserve`
+- `GET /api/health`
 
-##  Team
-- Devansh Bansal (Leader)  
-- Nitesh  
-- Aasu Jaiswal  
-- Deepak  
-- Gungun Gautam  
-
----
-
-##  Future Ideas
-- AI-based parking suggestions  
-- Metro card integration  
-- Better analytics & tracking  
-
----
-
-Built to reduce parking stress and make daily travel simpler
+## Team
+- Devansh Bansal (Leader)
+- Nitesh
+- Aasu Jaiswal
+- Deepak
+- Gungun Gautam
