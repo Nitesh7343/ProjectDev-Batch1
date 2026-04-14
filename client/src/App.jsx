@@ -27,6 +27,8 @@ const filters = ['All', 'Transit access', 'Open spots', 'Budget'];
 
 const dashboardNavItems = [
   { label: 'Overview', page: 'overview' },
+  { label: 'User dashboard', page: 'user-dashboard' },
+  { label: 'Admin portal', page: 'admin-portal' },
   { label: 'Locations', page: 'locations' },
   { label: 'Add location', page: 'add-location' },
   { label: 'Support', page: 'support' },
@@ -236,6 +238,7 @@ function ProjectIllustration({ variant }) {
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('overview');
+  const [authUser, setAuthUser] = useState(null);
   const [locations, setLocations] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
@@ -271,6 +274,20 @@ export default function App() {
 
   function handleNavigation(page) {
     setCurrentPage(page);
+  }
+
+  function handleAuthSuccess(role, name) {
+    const normalizedRole = role === 'admin' ? 'admin' : 'user';
+    const resolvedName = (name || '').trim() || (normalizedRole === 'admin' ? 'Admin' : 'User');
+    setAuthUser({ role: normalizedRole, name: resolvedName });
+    setCurrentPage(normalizedRole === 'admin' ? 'admin-portal' : 'user-dashboard');
+    showToast(`Signed in as ${normalizedRole}.`, 'success');
+  }
+
+  function handleLogout() {
+    setAuthUser(null);
+    setCurrentPage('overview');
+    showToast('Signed out successfully.', 'info');
   }
 
   function handleBackToTop() {
@@ -346,6 +363,28 @@ export default function App() {
 
     return () => observer.disconnect();
   }, [currentPage]);
+
+  useEffect(() => {
+    if (currentPage === 'user-dashboard' && !authUser) {
+      setCurrentPage('login');
+      return;
+    }
+
+    if (currentPage === 'add-location' && authUser?.role !== 'admin') {
+      if (authUser) {
+        setCurrentPage('user-dashboard');
+      } else {
+        setCurrentPage('login');
+      }
+      showToast('Only admins can add locations.', 'error');
+      return;
+    }
+
+    if (currentPage === 'admin-portal' && authUser?.role !== 'admin') {
+      setCurrentPage('login');
+      showToast('Admin access required.', 'error');
+    }
+  }, [currentPage, authUser]);
 
   async function handleReserve(id) {
     try {
@@ -467,7 +506,23 @@ export default function App() {
   const totalSpots = locations.reduce((sum, location) => sum + location.capacity, 0);
   const availableSpots = locations.reduce((sum, location) => sum + location.availableSpots, 0);
   const transitLocations = locations.filter((location) => location.transitAccess).length;
+  const averagePrice = locations.length ? Math.round((locations.reduce((sum, location) => sum + location.pricePerDay, 0) / locations.length) * 10) / 10 : 0;
+  const occupancyRate = totalSpots ? Math.round(((totalSpots - availableSpots) / totalSpots) * 100) : 0;
+  const lowAvailabilityLots = locations.filter((location) => location.availableSpots <= 10);
+  const topAvailableLots = [...locations].sort((left, right) => right.availableSpots - left.availableSpots).slice(0, 3);
   const currentNavItems = currentPage === 'login' || currentPage === 'signup' ? authNavItems : dashboardNavItems;
+  const visibleNavItems = currentNavItems.filter((item) => {
+    if (item.page === 'add-location') {
+      return authUser?.role === 'admin';
+    }
+    if (item.page === 'admin-portal') {
+      return authUser?.role === 'admin';
+    }
+    if (item.page === 'user-dashboard') {
+      return Boolean(authUser);
+    }
+    return true;
+  });
 
   function renderBrand() {
     return (
@@ -510,6 +565,17 @@ export default function App() {
       );
     }
 
+    if (authUser) {
+      return (
+        <div className="header-actions">
+          <span className="role-badge">{authUser.role === 'admin' ? 'Admin' : 'User'} mode</span>
+          <button className="ghost-button" type="button" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="header-actions">
         <button className="ghost-button" type="button" onClick={() => handleNavigation('login')}>
@@ -525,10 +591,12 @@ export default function App() {
   function renderNav() {
     return (
       <nav className="site-nav" aria-label="Primary navigation">
-        {currentNavItems.map((item) => {
+        {visibleNavItems.map((item) => {
           if (
             currentPage === 'dashboard' ||
             currentPage === 'overview' ||
+            currentPage === 'user-dashboard' ||
+            currentPage === 'admin-portal' ||
             currentPage === 'locations' ||
             currentPage === 'add-location' ||
             currentPage === 'support' ||
@@ -567,9 +635,15 @@ export default function App() {
               <button className="primary-button hero-action" type="button" onClick={() => handleNavigation('locations')}>
                 Explore locations
               </button>
-              <button className="ghost-button hero-action" type="button" onClick={() => handleNavigation('add-location')}>
-                Add location
-              </button>
+              {authUser?.role === 'admin' ? (
+                <button className="ghost-button hero-action" type="button" onClick={() => handleNavigation('add-location')}>
+                  Add location
+                </button>
+              ) : (
+                <button className="ghost-button hero-action" type="button" onClick={() => handleNavigation('support')}>
+                  Get support
+                </button>
+              )}
             </div>
           </div>
 
@@ -1207,6 +1281,173 @@ export default function App() {
     );
   }
 
+  function renderUserDashboardPage() {
+    return (
+      <main className="page-shell app-main">
+        <section className="panel role-page role-page--user">
+          <div className="role-page__hero">
+            <div>
+              <p className="section-label">User dashboard</p>
+              <h2>Your commute dashboard in one place</h2>
+              <p className="panel-copy">
+                See open lots, quick actions, and suggested parking choices without scanning the full inventory list.
+              </p>
+            </div>
+            <div className="role-page__actions">
+              <button type="button" className="primary-button" onClick={() => setCurrentPage('locations')}>
+                Find and reserve
+              </button>
+              <button type="button" className="ghost-button" onClick={() => setCurrentPage('support')}>
+                Get help
+              </button>
+            </div>
+          </div>
+
+          <div className="role-stats-grid" aria-label="User dashboard stats">
+            <article className="role-stat-card">
+              <span>Open spots network-wide</span>
+              <strong>{availableSpots}</strong>
+            </article>
+            <article className="role-stat-card">
+              <span>Transit-ready lots</span>
+              <strong>{transitLocations}</strong>
+            </article>
+            <article className="role-stat-card">
+              <span>Average daily rate</span>
+              <strong>${averagePrice}</strong>
+            </article>
+          </div>
+
+          <div className="role-content-grid">
+            <article className="role-card">
+              <p className="section-label">Recommended lots</p>
+              <div className="role-list">
+                {topAvailableLots.length === 0 ? (
+                  <p className="panel-copy">No lot data available yet.</p>
+                ) : (
+                  topAvailableLots.map((location) => (
+                    <div key={location.id} className="role-list-item">
+                      <div>
+                        <strong>{location.name}</strong>
+                        <p>{location.city}</p>
+                      </div>
+                      <span>{location.availableSpots} open</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </article>
+
+            <article className="role-card role-card--highlight">
+              <p className="section-label">Current booking</p>
+              {pendingPayment ? (
+                <div className="role-highlight-copy">
+                  <h3>{pendingPayment.location.name}</h3>
+                  <p>
+                    Payment pending for {pendingPayment.customer.fullName}. Complete checkout to confirm this reservation.
+                  </p>
+                  <button type="button" className="primary-button" onClick={() => setCurrentPage('payment')}>
+                    Continue payment
+                  </button>
+                </div>
+              ) : (
+                <div className="role-highlight-copy">
+                  <h3>No active booking</h3>
+                  <p>Select a parking location and reserve a spot to start your checkout flow.</p>
+                  <button type="button" className="primary-button" onClick={() => setCurrentPage('locations')}>
+                    Explore locations
+                  </button>
+                </div>
+              )}
+            </article>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  function renderAdminPortalPage() {
+    return (
+      <main className="page-shell app-main">
+        <section className="panel role-page role-page--admin">
+          <div className="role-page__hero">
+            <div>
+              <p className="section-label">Admin portal</p>
+              <h2>Monitor lot operations and capacity health</h2>
+              <p className="panel-copy">
+                Track occupancy, identify low-capacity lots, and jump directly into management actions.
+              </p>
+            </div>
+            <div className="role-page__actions">
+              <button type="button" className="primary-button" onClick={() => setCurrentPage('add-location')}>
+                Add new lot
+              </button>
+              <button type="button" className="ghost-button" onClick={loadLocations}>
+                Refresh data
+              </button>
+            </div>
+          </div>
+
+          <div className="role-stats-grid" aria-label="Admin portal stats">
+            <article className="role-stat-card">
+              <span>Total parking lots</span>
+              <strong>{locations.length}</strong>
+            </article>
+            <article className="role-stat-card">
+              <span>Total capacity</span>
+              <strong>{totalSpots}</strong>
+            </article>
+            <article className="role-stat-card">
+              <span>Occupancy rate</span>
+              <strong>{occupancyRate}%</strong>
+            </article>
+          </div>
+
+          <div className="role-content-grid">
+            <article className="role-card">
+              <p className="section-label">Low availability alerts</p>
+              <div className="role-list">
+                {lowAvailabilityLots.length === 0 ? (
+                  <p className="panel-copy">No low-availability alerts right now.</p>
+                ) : (
+                  lowAvailabilityLots.map((location) => (
+                    <div key={location.id} className="role-list-item role-list-item--alert">
+                      <div>
+                        <strong>{location.name}</strong>
+                        <p>{location.city}</p>
+                      </div>
+                      <span>{location.availableSpots} open</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </article>
+
+            <article className="role-card role-card--highlight">
+              <p className="section-label">Operations quick actions</p>
+              <div className="role-highlight-copy">
+                <h3>Control center</h3>
+                <p>Use shortcuts to update lot inventory, review public listings, and support rider booking issues.</p>
+                <div className="role-shortcuts">
+                  <button type="button" className="ghost-button" onClick={() => setCurrentPage('locations')}>
+                    View inventory
+                  </button>
+                  <button type="button" className="ghost-button" onClick={() => setCurrentPage('add-location')}>
+                    Publish lot
+                  </button>
+                  <button type="button" className="ghost-button" onClick={() => setCurrentPage('support')}>
+                    Support queue
+                  </button>
+                </div>
+                <p className="role-note">Network average daily rate: ${averagePrice}</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   function renderPaymentPage() {
     return (
       <main className="page-shell app-main">
@@ -1471,11 +1712,11 @@ export default function App() {
 
   function renderCurrentPage() {
     if (currentPage === 'login') {
-      return <Login onSwitchPage={handleNavigation} />;
+      return <Login onSwitchPage={handleNavigation} onAuthSuccess={handleAuthSuccess} />;
     }
 
     if (currentPage === 'signup') {
-      return <Signup onSwitchPage={handleNavigation} />;
+      return <Signup onSwitchPage={handleNavigation} onAuthSuccess={handleAuthSuccess} />;
     }
 
     if (currentPage === 'locations') {
@@ -1483,11 +1724,22 @@ export default function App() {
     }
 
     if (currentPage === 'add-location') {
+      if (authUser?.role !== 'admin') {
+        return null;
+      }
       return renderAddLocationPage();
     }
 
     if (currentPage === 'support') {
       return renderSupportPage();
+    }
+
+    if (currentPage === 'user-dashboard') {
+      return renderUserDashboardPage();
+    }
+
+    if (currentPage === 'admin-portal') {
+      return renderAdminPortalPage();
     }
 
     if (currentPage === 'payment') {
@@ -1534,9 +1786,11 @@ export default function App() {
             <button type="button" className="site-footer__link-button" onClick={() => handleNavigation('locations')}>
               Locations
             </button>
-            <button type="button" className="site-footer__link-button" onClick={() => handleNavigation('add-location')}>
-              Add location
-            </button>
+            {authUser?.role === 'admin' ? (
+              <button type="button" className="site-footer__link-button" onClick={() => handleNavigation('add-location')}>
+                Add location
+              </button>
+            ) : null}
             <button type="button" className="site-footer__link-button" onClick={() => handleNavigation('support')}>
               Support
             </button>

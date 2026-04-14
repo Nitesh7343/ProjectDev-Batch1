@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
-export default function Signup({ onSwitchPage }) {
+export default function Signup({ onSwitchPage, onAuthSuccess }) {
   const [form, setForm] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'user',
     agreeTerms: false,
   });
   const [status, setStatus] = useState({ loading: false, message: '' });
@@ -16,7 +17,7 @@ export default function Signup({ onSwitchPage }) {
 
     // Simulate signup (replace with real API call)
     setTimeout(() => {
-      const { fullName, email, password, confirmPassword, agreeTerms } = form;
+      const { fullName, email, password, confirmPassword, role, agreeTerms } = form;
 
       if (!fullName || !email || !password || !confirmPassword) {
         setStatus({ loading: false, message: 'Please fill in all fields.' });
@@ -43,9 +44,11 @@ export default function Signup({ onSwitchPage }) {
         return;
       }
 
-      setForm({ fullName: '', email: '', password: '', confirmPassword: '', agreeTerms: false });
+      setForm({ fullName: '', email: '', password: '', confirmPassword: '', role: 'user', agreeTerms: false });
       setStatus({ loading: false, message: 'Account created! Redirecting to login...' });
-      // In a real app, redirect to dashboard or login after signup
+      if (onAuthSuccess) {
+        onAuthSuccess(role, fullName);
+      }
     }, 600);
   }
 
@@ -107,6 +110,17 @@ export default function Signup({ onSwitchPage }) {
                 placeholder="••••••••"
                 required
               />
+            </label>
+
+            <label>
+              Register as
+              <select
+                value={form.role}
+                onChange={(event) => setForm({ ...form, role: event.target.value })}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
             </label>
 
             <label className="checkbox-label">

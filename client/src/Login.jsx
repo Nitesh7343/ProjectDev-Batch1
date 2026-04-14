@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-export default function Login({ onSwitchPage }) {
-  const [form, setForm] = useState({ email: '', password: '' });
+export default function Login({ onSwitchPage, onAuthSuccess }) {
+  const [form, setForm] = useState({ email: '', password: '', role: 'user' });
   const [status, setStatus] = useState({ loading: false, message: '' });
 
   async function handleSubmit(event) {
@@ -24,9 +24,11 @@ export default function Login({ onSwitchPage }) {
       }
 
       // On success, clear form and show message
-      setForm({ email: '', password: '' });
+      setForm({ email: '', password: '', role: 'user' });
       setStatus({ loading: false, message: 'Login successful! Redirecting...' });
-      // In a real app, redirect to dashboard after login
+      if (onAuthSuccess) {
+        onAuthSuccess(form.role, email.split('@')[0]);
+      }
     }, 600);
   }
 
@@ -66,6 +68,17 @@ export default function Login({ onSwitchPage }) {
                 placeholder="••••••••"
                 required
               />
+            </label>
+
+            <label>
+              Sign in as
+              <select
+                value={form.role}
+                onChange={(event) => setForm({ ...form, role: event.target.value })}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
             </label>
 
             <div className="auth-remember">
